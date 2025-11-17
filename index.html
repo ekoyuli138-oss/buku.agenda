@@ -12,7 +12,7 @@
     :root {
       --vh: 1px;
       --sidebar-width: 250px;
-      --sidebar-collapsed-width: 70px;
+      --sidebar-collapsed-width: 70px; /* Tidak digunakan dalam versi baru */
     }
 
     body {
@@ -20,8 +20,9 @@
       min-height: 100vh;
       margin: 0;
       padding: 0;
-      overflow-x: hidden; /* 👈 Penting: cegah scroll horizontal */
+      overflow-x: hidden;
       transition: background 0.3s ease;
+      /* Pastikan body tidak memiliki margin atau padding yang mengganggu */
     }
 
     .sidebar {
@@ -29,18 +30,21 @@
       color: white;
       position: fixed;
       top: 0;
-      left: 0;
+      left: 0; /* Mulai dari posisi normal */
       width: var(--sidebar-width);
       height: 100dvh;
       height: calc(100 * var(--vh));
       padding-top: 20px;
       z-index: 1000;
       box-shadow: 2px 0 10px rgba(0,0,0,0.1);
-      transition: left 0.3s ease; /* Animasi saat muncul/sembunyi */
+      /* Ganti transisi left dengan transform */
+      transform: translateX(0); /* Terlihat */
+      transition: transform 0.3s ease;
     }
 
     .sidebar.collapsed {
-      left: -250px; /* Sembunyi ke kiri, bukan transform */
+      /* Sembunyikan dengan menggeser ke kiri */
+      transform: translateX(-100%); /* atau calc(-1 * var(--sidebar-width)) */
     }
 
     .content {
@@ -53,7 +57,7 @@
     }
 
     .content.shifted {
-      margin-left: var(--sidebar-collapsed-width);
+      margin-left: 0; /* Saat sidebar disembunyikan, content mengambil ruang penuh */
     }
 
     .btn-toggle-sidebar {
@@ -73,11 +77,11 @@
       font-size: 1.2rem;
       cursor: pointer;
       box-shadow: 0 2px 5px rgba(0,0,0,0.2);
-      transition: left 0.3s ease;
+      transition: left 0.3s ease; /* Transisi untuk tombol jika perlu */
     }
 
     .btn-toggle-sidebar.shifted {
-      left: 70px;
+      left: 15px; /* Biarkan tombol tetap di posisi aslinya saat sidebar disembunyikan */
     }
 
     .nav-link .icon-text {
@@ -109,25 +113,28 @@
       overflow-x: auto;
     }
 
+    /* Perubahan Media Query untuk Mobile */
     @media (max-width: 768px) {
       .sidebar {
-        left: -250px;
+        /* Jangan sembunyikan secara default di mobile, biarkan JavaScript yang mengaturnya */
+        transform: translateX(-100%); /* Sembunyikan secara default */
       }
-      .sidebar.visible {
-        left: 0;
+      .sidebar.visible { /* Tambahkan kelas 'visible' untuk menampilkan */
+        transform: translateX(0);
       }
       .content {
-        margin-left: 0;
+        margin-left: 0; /* Content mengambil penuh lebar di mobile */
       }
       .content.shifted {
-        margin-left: 0;
+        /* Tidak diperlukan perubahan margin di mobile saat sidebar muncul */
+        /* margin-left: 0; */
       }
       .btn-toggle-sidebar {
-        left: 15px !important;
+        /* left: 15px; */ /* Biarkan tetap di posisi aslinya */
       }
-      .btn-toggle-sidebar.shifted {
-        left: 15px;
-      }
+      /* .btn-toggle-sidebar.shifted { */
+        /* left: 15px; */
+      /* } */
     }
   </style>
 </head>
@@ -372,22 +379,39 @@
     setFullHeight();
     window.addEventListener('resize', setFullHeight);
 
-    // Toggle Sidebar
+    // Toggle Sidebar - Versi yang dimodifikasi
     function toggleSidebar() {
       const sidebar = document.getElementById('sidebar');
       const content = document.getElementById('content');
       const btn = document.getElementById('toggleSidebarBtn');
 
+      // Toggle kelas 'collapsed' untuk menyembunyikan/menampilkan sidebar
       sidebar.classList.toggle('collapsed');
-      content.classList.toggle('shifted');
-      btn.classList.toggle('shifted');
 
-      // Ubah ikon
-      const icon = btn.querySelector('i');
-      if (sidebar.classList.contains('collapsed')) {
-        icon.classList.replace('bi-list', 'bi-dash');
+      // Toggle kelas 'shifted' untuk menggeser content jika diperlukan (opsional di mobile)
+      // Di versi ini, kita fokus pada sidebar, content bisa tetap atau diatur tergantung UX
+      // Misalnya, di mobile, mungkin content tidak perlu digeser, sidebar muncul di atasnya
+      // Kita bisa mengabaikan shifting content di mobile untuk saat ini
+      // content.classList.toggle('shifted'); // Komentari atau hapus jika tidak ingin content berpindah
+
+      // Di mobile, kita bisa menambahkan kelas 'visible' saat sidebar muncul
+      // Kita gunakan logika berikut:
+      if (window.innerWidth <= 768) {
+          if (sidebar.classList.contains('collapsed')) {
+              sidebar.classList.remove('visible'); // Sembunyikan
+              btn.classList.remove('shifted'); // Reset posisi tombol jika perlu
+          } else {
+              sidebar.classList.add('visible'); // Tampilkan
+              // btn.classList.add('shifted'); // Atur posisi tombol jika sidebar muncul dan menggeser content
+          }
       } else {
-        icon.classList.replace('bi-dash', 'bi-list');
+          // Di desktop, ikon tetap berubah
+          const icon = btn.querySelector('i');
+          if (sidebar.classList.contains('collapsed')) {
+              icon.classList.replace('bi-list', 'bi-dash');
+          } else {
+              icon.classList.replace('bi-dash', 'bi-list');
+          }
       }
     }
 
@@ -416,7 +440,8 @@
     function logout() {
       document.getElementById('dashboardPage').classList.add('d-none');
       document.getElementById('loginPage').classList.remove('d-none');
-      document.getElementById('sidebar').classList.remove('collapsed');
+      // Reset sidebar ke kondisi default saat logout
+      document.getElementById('sidebar').classList.remove('collapsed', 'visible');
       document.getElementById('content').classList.remove('shifted');
       document.getElementById('toggleSidebarBtn').classList.remove('shifted');
       document.getElementById('toggleSidebarBtn').querySelector('i').classList.replace('bi-dash', 'bi-list');
